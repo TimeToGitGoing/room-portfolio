@@ -1,6 +1,6 @@
 import './style.scss'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/Addons.js'
+import { OrbitControls } from "three/examples/jsm/Addons.js"
 import { DRACOLoader } from 'three/examples/jsm/Addons.js'
 import { GLTFLoader } from 'three/examples/jsm/Addons.js'
 
@@ -18,25 +18,51 @@ const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('/draco/')
 
 // Textures
-const roomTex1 = textureLoader.load('/textures/room-tex-1.webp')
-const roomTex2 = textureLoader.load('/textures/room-tex-2.webp')
-const booksTex = textureLoader.load('/textures/books-tex.webp')
-const floorTex = textureLoader.load('/textures/floor-tex.webp')
-const monitorsTex = textureLoader.load('/textures/monitors-tex.webp')
-const nzTex = textureLoader.load('/textures/nz-tex.webp')
-const tuscanyTex = textureLoader.load('/textures/tuscany-tex.webp')
-const OuterWildsTex = textureLoader.load('/textures/Outerwilds-tex.webp')
-const pascal1Tex = textureLoader.load('/textures/Pascal1-tex.webp')
-const pascal2Tex = textureLoader.load('/textures/Pascal2-tex.webp')
-const pascal3Tex = textureLoader.load('/textures/pascal3-tex.webp')
-const plantTex = textureLoader.load('/textures/plant-tex.webp')
-const miscTex = textureLoader.load('/textures/misc-tex.webp')
-const shelfbookTex = textureLoader.load('/textures/shelf-book-tex.webp')
-const tableChairStuffTex = textureLoader.load('/textures/tablechairstuff-tex.webp')
+const roomTex1 = textureLoader.load('/textures/room/room-tex-1.webp')
+const roomTex2 = textureLoader.load('/textures/room/room-tex-2.webp')
+const booksTex = textureLoader.load('/textures/room/books-tex.webp')
+const floorTex = textureLoader.load('/textures/room/floor-tex.webp')
+const monitorsTex = textureLoader.load('/textures/room/monitors-tex.webp')
+const nzTex = textureLoader.load('/textures/room/nz-tex.webp')
+const tuscanyTex = textureLoader.load('/textures/room/tuscany-tex.webp')
+const OuterWildsTex = textureLoader.load('/textures/room/Outerwilds-tex.webp')
+const pascal1Tex = textureLoader.load('/textures/room/Pascal1-tex.webp')
+const pascal2Tex = textureLoader.load('/textures/room/Pascal2-tex.webp')
+const pascal3Tex = textureLoader.load('/textures/room/pascal3-tex.webp')
+const plantTex = textureLoader.load('/textures/room/plant-tex.webp')
+const miscTex = textureLoader.load('/textures/room/misc-tex.webp')
+const shelfbookTex = textureLoader.load('/textures/room/shelf-book-tex.webp')
+const tableChairStuffTex = textureLoader.load('/textures/room/tablechairstuff-tex.webp')
 
 // Emission materials
-const outsideLightMaterial = new THREE.MeshBasicMaterial({ color: 0xfff7de })
+const outsideLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
 const redLightMaterial = new THREE.MeshBasicMaterial({ color: 0xe32f22 })
+
+// Environment map
+const environmentMap = new THREE.CubeTextureLoader()
+  .setPath( 'textures/skybox/' )
+  .load([
+        'px.webp',
+        'nx.webp',
+        'py.webp',
+        'ny.webp',
+        'pz.webp',
+        'nz.webp'
+])
+
+// Glass material
+const glassMaterial = new THREE.MeshPhysicalMaterial({
+  transmission: 1,
+  opacity: 1,
+  metalness: 0,
+  roughness: 0,
+  ior: 1.5,
+  thickness: 0.01,
+  specularIntensity: 1,
+  envMap: environmentMap,
+  envMapIntensity: 1,
+})
+
 
 // GLTF loader
 const gltfLoader = new GLTFLoader()
@@ -142,19 +168,26 @@ gltfLoader.load(
           })
           child.material = material
         }
+        if (child.name.includes("glassPanel")){
+          child.material = glassMaterial
+        }
+        if (child.name.includes("clockGlass")){
+          child.material = glassMaterial
+        }
 
         const windowLightMesh = gltf.scene.children.find((child) => child.name === 'windowlight')
         const doorLightMesh = gltf.scene.children.find((child) => child.name === 'doorlight')
         const monitorLightMesh = gltf.scene.children.find((child) => child.name === 'monitorRed')
+        const pcLightMesh = gltf.scene.children.find((child) => child.name === 'PCRed')
 
         windowLightMesh.material = outsideLightMaterial
         doorLightMesh.material = outsideLightMaterial
         monitorLightMesh.material = redLightMaterial
+        pcLightMesh.material = redLightMaterial
       }
       
     })
     scene.add(gltf.scene)
-    console.log(gltf.scene)
   }
 )
 
@@ -193,10 +226,10 @@ miscTex.colorSpace = THREE.SRGBColorSpace
 tableChairStuffTex.colorSpace = THREE.SRGBColorSpace
 
 const scene = new THREE.Scene()
-const camera = new THREE.PerspectiveCamera( 75, sizes.width / sizes.height, 0.1, 1000 )
+const camera = new THREE.PerspectiveCamera( 35, sizes.width / sizes.height, 0.1, 1000 )
 camera.position.z = 5
 // controls.update() must be called after any manual changes to the camera's transforms
-camera.position.set(0, 20, 100)
+camera.position.set(20, 7, 20)
 
 
 const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true })
@@ -206,6 +239,16 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 const controls = new OrbitControls( camera, renderer.domElement )
 controls.enableDamping = true
 controls.dampingFactor = 0.05
+controls.target.set(1.2, -0.9, -0.6)
+
+// Limit camera angles and movement
+controls.minDistance = 5
+controls.maxDistance = 100
+controls.minPolarAngle = 0
+controls.maxPolarAngle = Math.PI / 2
+controls.minAzimuthAngle = 0
+controls.maxAzimuthAngle = Math.PI / 2 * 0.92
+
 
 // Event Listeners
 window.addEventListener("resize", () => {
@@ -223,7 +266,7 @@ window.addEventListener("resize", () => {
 
 const render = () => {
   controls.update()
-  
+ 
   renderer.render(scene, camera)
 
   window.requestAnimationFrame(render)
