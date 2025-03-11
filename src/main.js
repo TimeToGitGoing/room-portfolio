@@ -34,6 +34,10 @@ const miscTex = textureLoader.load('/textures/misc-tex.webp')
 const shelfbookTex = textureLoader.load('/textures/shelf-book-tex.webp')
 const tableChairStuffTex = textureLoader.load('/textures/tablechairstuff-tex.webp')
 
+// Emission materials
+const outsideLightMaterial = new THREE.MeshBasicMaterial({ color: 0xfff7de })
+const redLightMaterial = new THREE.MeshBasicMaterial({ color: 0xe32f22 })
+
 // GLTF loader
 const gltfLoader = new GLTFLoader()
 gltfLoader.setDRACOLoader(dracoLoader)
@@ -138,6 +142,14 @@ gltfLoader.load(
           })
           child.material = material
         }
+
+        const windowLightMesh = gltf.scene.children.find((child) => child.name === 'windowlight')
+        const doorLightMesh = gltf.scene.children.find((child) => child.name === 'doorlight')
+        const monitorLightMesh = gltf.scene.children.find((child) => child.name === 'monitorRed')
+
+        windowLightMesh.material = outsideLightMaterial
+        doorLightMesh.material = outsideLightMaterial
+        monitorLightMesh.material = redLightMaterial
       }
       
     })
