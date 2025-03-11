@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from "three/examples/jsm/Addons.js"
 import { DRACOLoader } from 'three/examples/jsm/Addons.js'
 import { GLTFLoader } from 'three/examples/jsm/Addons.js'
+import { textureLoad } from 'three/tsl'
 
 const canvas = document.querySelector("#experience-canvas")
 const sizes = {
@@ -33,6 +34,8 @@ const plantTex = textureLoader.load('/textures/room/plant-tex.webp')
 const miscTex = textureLoader.load('/textures/room/misc-tex.webp')
 const shelfbookTex = textureLoader.load('/textures/room/shelf-book-tex.webp')
 const tableChairStuffTex = textureLoader.load('/textures/room/tablechairstuff-tex.webp')
+const screenRtTex = textureLoader.load('/textures/room/screenRt-tex.webp')
+const screenLfTex = textureLoader.load('/textures/room/screenLf-tex.webp')
 
 // Emission materials
 const outsideLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
@@ -174,6 +177,19 @@ gltfLoader.load(
         if (child.name.includes("clockGlass")){
           child.material = glassMaterial
         }
+        if (child.name.includes("ScreenRt-monitors")){
+          child.material = new THREE.MeshBasicMaterial({
+            map: screenRtTex
+          })
+        }
+        if (child.name.includes("ScreenLf-monitors")){
+          child.material = new THREE.MeshBasicMaterial({
+            map: screenLfTex
+          })
+        }
+        if (child.name.includes("Raycaster")) {
+          raycasterObjects.push(child);
+        }
 
         const windowLightMesh = gltf.scene.children.find((child) => child.name === 'windowlight')
         const doorLightMesh = gltf.scene.children.find((child) => child.name === 'doorlight')
@@ -188,6 +204,7 @@ gltfLoader.load(
       
     })
     scene.add(gltf.scene)
+    console.log(gltf.scene)
   }
 )
 
@@ -207,6 +224,8 @@ shelfbookTex.flipY = false
 plantTex.flipY = false
 miscTex.flipY = false
 tableChairStuffTex.flipY = false
+screenRtTex.flipY = false
+screenLfTex.flipY = false
 
 roomTex1.colorSpace = THREE.SRGBColorSpace
 roomTex2.colorSpace = THREE.SRGBColorSpace
@@ -224,6 +243,8 @@ plantTex.colorSpace = THREE.SRGBColorSpace
 miscTex.colorSpace = THREE.SRGBColorSpace
 miscTex.colorSpace = THREE.SRGBColorSpace
 tableChairStuffTex.colorSpace = THREE.SRGBColorSpace
+screenRtTex.colorSpace = THREE.SRGBColorSpace
+screenLfTex.colorSpace = THREE.SRGBColorSpace
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera( 35, sizes.width / sizes.height, 0.1, 1000 )
@@ -249,6 +270,38 @@ controls.maxPolarAngle = Math.PI / 2
 controls.minAzimuthAngle = 0
 controls.maxAzimuthAngle = Math.PI / 2 * 0.92
 
+// Raycaster
+const raycasterObjects = []
+let currentIntersects = []
+
+const portfolioLinks = {
+  "ScreenRt": "https://www.artistwan.com/showreel",
+  "ScreenLf": "https://www.artistwan.com/projects"
+}
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+window.addEventListener("mousemove", (e) => {
+  pointer.x = ( e.clientX / window.innerWidth ) * 2 - 1;
+	pointer.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
+})
+
+window.addEventListener("click", (e) => {
+  if(currentIntersects.length>0){
+    const object = currentIntersects[0].object
+
+    Object.entries(portfolioLinks).forEach(([key, url]) => {
+      if(object.name.includes(key)){
+        const newWindow = window.open()
+        newWindow.opener = null
+        newWindow.location = url
+        newWindow.target = "_blank"
+        newWindow.rel = "noopener noreferrer"
+      }
+    })
+  }
+})
 
 // Event Listeners
 window.addEventListener("resize", () => {
@@ -267,6 +320,28 @@ window.addEventListener("resize", () => {
 const render = () => {
   controls.update()
  
+  // Raycaster
+  raycaster.setFromCamera(pointer, camera)
+
+	// calculate objects intersecting the picking ray
+	currentIntersects = raycaster.intersectObjects(raycasterObjects)
+
+	for ( let i = 0; i < currentIntersects.length; i ++ ) {
+	}
+
+  if(currentIntersects.length>0){
+    const currentIntersectsObject = currentIntersects[0].object
+
+    if(currentIntersectsObject.name.includes("Raycaster")){
+      document.body.style.cursor = "pointer"
+    }else{
+      document.body.style.cursor = "default"
+    }
+  }else{
+    document.body.style.cursor = "default"
+  }
+
+
   renderer.render(scene, camera)
 
   window.requestAnimationFrame(render)
