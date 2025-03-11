@@ -1,9 +1,9 @@
 import './style.scss'
+import gsap from "gsap"
 import * as THREE from 'three'
 import { OrbitControls } from "three/examples/jsm/Addons.js"
 import { DRACOLoader } from 'three/examples/jsm/Addons.js'
 import { GLTFLoader } from 'three/examples/jsm/Addons.js'
-import { textureLoad } from 'three/tsl'
 
 const canvas = document.querySelector("#experience-canvas")
 const sizes = {
@@ -190,6 +190,12 @@ gltfLoader.load(
         if (child.name.includes("Raycaster")) {
           raycasterObjects.push(child);
         }
+        if (child.name.includes("Hover")) {
+          child.userData.initialScale = new THREE.Vector3().copy(child.scale)
+          child.userData.initialPosition = new THREE.Vector3().copy(child.position)
+          child.userData.initialRotation = new THREE.Euler().copy(child.rotation)
+        }
+
 
         const windowLightMesh = gltf.scene.children.find((child) => child.name === 'windowlight')
         const doorLightMesh = gltf.scene.children.find((child) => child.name === 'doorlight')
@@ -273,6 +279,12 @@ controls.maxAzimuthAngle = Math.PI / 2 * 0.92
 // Raycaster
 const raycasterObjects = []
 let currentIntersects = []
+let currentHoveredObject = null
+
+if (currentHoveredObject) {
+  playHoverAnimation(currentHoveredObject, false)
+  currentHoveredObject = null
+}
 
 const portfolioLinks = {
   "ScreenRt": "https://www.artistwan.com/showreel",
@@ -317,6 +329,43 @@ window.addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 })
 
+function playHoverAnimation (object, isHovering){
+  let scale = 1.15
+  gsap.killTweensOf(object.scale)
+  gsap.killTweensOf(object.rotation)
+  gsap.killTweensOf(object.position)
+
+  if(isHovering){
+    // scale animation for all objects
+    gsap.to(object.scale, {
+      x: object.userData.initialScale.x * scale,
+      y: object.userData.initialScale.y * scale,
+      z: object.userData.initialScale.z * scale,
+      duration: 0.5,
+      ease: "back.out(2)"
+    })
+    gsap.to(object.rotation, {
+      x: object.userData.initialRotation.x + Math.PI / 10,
+      duration: 0.5,
+      ease: "back.out(2)",
+    })
+  }else{
+    // reset scale for all objects
+    gsap.to(object.scale, {
+      x: object.userData.initialScale.x,
+      y: object.userData.initialScale.y,
+      z: object.userData.initialScale.z,
+      duration: 0.3,
+      ease: "back.out(2)"
+    })
+    gsap.to(object.rotation, {
+      x: object.userData.initialRotation.x,
+      duration: 0.3,
+      ease: "back.out(2)",
+    })
+  }
+}
+
 const render = () => {
   controls.update()
  
@@ -330,14 +379,30 @@ const render = () => {
 	}
 
   if(currentIntersects.length>0){
-    const currentIntersectsObject = currentIntersects[0].object
+    const currentIntersectObject = currentIntersects[0].object
 
-    if(currentIntersectsObject.name.includes("Raycaster")){
+    if(currentIntersectObject.name.includes("Hover")){
+      if(currentIntersectObject !== currentHoveredObject){
+        
+        if(currentHoveredObject){
+          playHoverAnimation(currentHoveredObject, false)
+        }
+        
+        playHoverAnimation(currentIntersectObject, true)
+        currentHoveredObject = currentIntersectObject
+      }
+    }
+
+    if(currentIntersectObject.name.includes("Raycaster")){
       document.body.style.cursor = "pointer"
     }else{
       document.body.style.cursor = "default"
     }
   }else{
+    if (currentHoveredObject) {
+      playHoverAnimation(currentHoveredObject, false)
+      currentHoveredObject = null
+    }
     document.body.style.cursor = "default"
   }
 
