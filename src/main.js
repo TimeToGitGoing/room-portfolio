@@ -67,9 +67,91 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 })
 
 
+
 // GLTF loader
 const gltfLoader = new GLTFLoader()
 gltfLoader.setDRACOLoader(dracoLoader)
+
+// Loading manager
+const manager = new THREE.LoadingManager()
+
+const loadingScreen = document.querySelector(".loading-screen")
+const loadingScreenButton = document.querySelector(".loading-screen-button")
+const desktopInstructions = document.querySelector(".desktop-instructions")
+const mobileInstructions = document.querySelector(".mobile-instructions")
+
+const loader = new GLTFLoader(manager)
+loader.setDRACOLoader(dracoLoader)
+
+manager.onLoad = function () {
+  loadingScreenButton.style.border = "8px solid #063954"
+  loadingScreenButton.style.background = "#8cd7ff"
+  loadingScreenButton.style.color = "#e8f7ff"
+  loadingScreenButton.style.boxShadow = "rgba(0, 0, 0, 0.25) 0px 3px 8px"
+  loadingScreenButton.textContent = "Enter!"
+  loadingScreenButton.style.cursor = "pointer!"
+  loadingScreenButton.style.transition = "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)"
+  let isDisabled = false
+
+  function handleEnter() {
+    if (isDisabled) return
+  
+    loadingScreenButton.style.cursor = "default"
+    loadingScreenButton.style.border = "8px solidrgb(28, 92, 129)"
+    loadingScreenButton.style.background = "#a3dfff"
+    loadingScreenButton.style.color = "#f7fcff"
+    loadingScreenButton.style.boxShadow = "none"
+    loadingScreenButton.textContent = "Let's go!"
+    loadingScreenButton.background = "#a3dfff"
+    isDisabled = true
+  
+    playReveal()
+  }
+}
+
+loadingScreenButton.addEventListener("mouseenter", () => {
+  loadingScreenButton.style.transform = "scale(1.3)"
+})
+
+loadingScreenButton.addEventListener("touchend", (e) => {
+  touchHappened = true
+  e.preventDefault()
+  handleEnter()
+})
+
+loadingScreenButton.addEventListener("click", (e) => {
+  if (touchHappened) return
+  handleEnter()
+})
+
+loadingScreenButton.addEventListener("mouseleave", () => {
+  loadingScreenButton.style.transform = "none"
+})
+
+
+function playReveal() {
+  const t1 = gsap.timeline()
+
+  t1.to(loadingScreen, {
+    scale: 0.5,
+    duration: 1.2,
+    delay: 0.25,
+    ease: "back.in(1.8)",
+  }).to(
+    loadingScreen,
+    {
+      y: "200vh",
+      transform: "perspective(1000px) rotateX(45deg) rotateY(-35deg)",
+      duration: 1.2,
+      ease: "back.in(1.8)",
+      onComplete: () => {
+        loadingScreen.remove()
+      },
+    },
+    "-=0.1"
+  )
+}
+
 gltfLoader.load(
   '/models/Room_Portfolio.glb',
   (gltf) => {
